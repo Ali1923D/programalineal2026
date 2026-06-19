@@ -10,29 +10,50 @@ Esta aplicación permite ajustar los parámetros y restricciones para la optimiz
 de los componentes de un CubeSat utilizando Programación Lineal Entera Mixta (MILP).
 """)
 
+# CSS inyectado para obligar a las etiquetas (labels) a tener la misma altura y alinear los inputs
+st.markdown("""
+    <style>
+    div[data-testid="stWidgetLabel"] {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.write("---")
+
 # Crear columnas para organizar la interfaz
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
-    st.header("🎯 Coeficientes de la Función Objetivo (Pesos/Prioridad)")
+    st.header("🎯 Función Objetivo (Prioridades)")
     st.caption("Puntos otorgados por cada minuto de operación:")
-    w1 = st.number_input("Cámara (x1)", value=50)
-    w2 = st.number_input("Espectrómetro (x2)", value=30)
-    w3 = st.number_input("Procesador (x3)", value=20)
-    w4 = st.number_input("Banda X (x4)", value=40)
-    w5 = st.number_input("UHF (x5)", value=10)
-    w6 = st.number_input("Térmico (x6)", value=5)
+    
+    w1 = st.number_input("📸 Cámara (x1)", value=50)
+    w2 = st.number_input("🔬 Espectrómetro (x2)", value=30)
+    w3 = st.number_input("💻 Procesador (x3)", value=20)
+    w4 = st.number_input("📡 Transmisor Banda X (x4)", value=40)
+    w5 = st.number_input("📟 Transmisor UHF (x5)", value=10)
+    w6 = st.number_input("❄️ Control Térmico (x6)", value=5)
 
 with col2:
-    st.header("⚙️ Límites de las Restricciones")
-    max_bateria = st.number_input("R1: Consumo Máximo de Batería (mA*min)", value=15000)
-    max_termico = st.number_input("R2: Presupuesto Térmico Máximo (unidades)", value=2000)
-    dep_proc = st.number_input("R3: Factor de dependencia Procesador (x3 >= factor * x1)", value=0.5)
-    max_descarga = st.number_input("R4: Ventana de Descarga Máxima UHF + Banda X (min)", value=35)
-    max_bandax = st.number_input("R5: Ciclo de trabajo Máximo Banda X (min)", value=20)
+    st.header("⚙️ Límites de Restricciones")
+    st.caption("Capacidades máximas y dependencias del sistema:")
+    
+    max_bateria = st.number_input("🔋 R1: Consumo Máximo Batería (mA*min)", value=15000)
+    max_termico = st.number_input("🔥 R2: Presupuesto Térmico Máximo", value=2000)
+    dep_proc = st.number_input("🔗 R3: Factor de dependencia Procesador (x3 ≥ f·x1)", value=0.50, step=0.05)
+    max_descarga = st.number_input("⏳ R4: Ventana de Descarga UHF + Banda X (min)", value=35)
+    max_bandax = st.number_input("⏱️ R5: Ciclo de trabajo Máximo Banda X (min)", value=20)
+    
+    # Input fantasma invisible para igualar la cantidad de filas en ambas columnas (6 vs 6)
+    st.markdown('<div style="height: 77px;"></div>', unsafe_allow_html=True)
+
+st.write("---")
 
 # Resolver cuando el usuario presione el botón
-if st.button("🚀 Ejecutar Optimización", type="primary"):
+if st.button("🚀 Ejecutar Optimización", type="primary", use_container_width=True):
     
     # Coeficientes (negativos para maximizar)
     c = [-w1, -w2, -w3, -w4, -w5, -w6]
@@ -57,7 +78,6 @@ if st.button("🚀 Ejecutar Optimización", type="primary"):
     
     st.header("📊 Resultados de la Optimización")
     
-    # Mostrar estado del optimizador
     if res.success:
         st.success(f"¡Solución Óptima Encontrada! Estado: {res.message}")
         st.metric(label="Valor Óptimo de la Función Objetivo (Z)", value=f"{-res.fun:.2f} puntos")
@@ -71,11 +91,9 @@ if st.button("🚀 Ejecutar Optimización", type="primary"):
             ("❄️ Control Térmico Activo (x6)", res.x[5])
         ]
         
-        # Mostrar los resultados de forma limpia
         for nombre, valor in componentes:
             st.write(f"**{nombre}** = {int(round(valor))} minutos")
             
-        # Calcular consumos reales para dar contexto
         cons_bat = sum(np.array(A[0]) * res.x)
         cons_term = sum(np.array(A[1]) * res.x)
         
