@@ -10,7 +10,7 @@ Esta aplicación permite ajustar los parámetros y restricciones para la optimiz
 de los componentes de un CubeSat utilizando Programación Lineal Entera Mixta (MILP).
 """)
 
-# Crear pestañas o columnas para organizar la interfaz
+# Crear columnas para organizar la interfaz
 col1, col2 = st.columns([1, 1])
 
 with col1:
